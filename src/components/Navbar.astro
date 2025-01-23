@@ -1,0 +1,20 @@
+<nav class="bg-gray-600 p-4">
+  <div class="container mx-auto flex justify-between items-center">
+    <a href="/" class="text-white text-xl font-bold">Image Gallery</a>
+    <input 
+      type="text" 
+      placeholder="Search..." 
+      id="searchInput"
+      class="px-4 py-2 rounded-lg"
+    />
+  </div>
+</nav>
+
+<script>
+  document.getElementById('searchInput').addEventListener('input', (event) => {
+    const searchQuery = event.target.value;
+    const searchEvent = new CustomEvent('search', { detail: searchQuery });
+    document.dispatchEvent(searchEvent);
+    console.log(searchQuery);
+  });
+</script>

@@ -1,8 +1,20 @@
 ---
 import { fetchImages } from '../utils/api';
+import Navbar from '../components/Navbar.astro';
 
-const images = await fetchImages();
+let images = await fetchImages();
+let filteredImages = images;  // Initialize filtered images with all images
+
+function filterImages(query) {
+  filteredImages = images.filter(image => 
+    image.alt_description.toLowerCase().includes(query.toLowerCase()) ||
+    image.description.toLowerCase().includes(query.toLowerCase()) ||
+    image.user.name.toLowerCase().includes(query.toLowerCase())
+  );
+}
 ---
+
+<Navbar />
 
 <div class="container mx-auto px-4 py-6">
   <!-- Gallery Header -->
@@ -10,11 +22,11 @@ const images = await fetchImages();
     Explore Stunning Photos
   </h1>
 
-  {images.length === 0 ? (
+  {filteredImages.length === 0 ? (
     <p class="text-black-500 text-center">No images found. Please try again later!</p>
   ) : (
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-      {images.map((image) => (
+      {filteredImages.map((image) => (
         <div 
           key={image.id} 
           class="group relative bg-white rounded-lg overflow-hidden"
@@ -69,7 +81,6 @@ const images = await fetchImages();
     
     <!-- Loading Spinner -->
     <div id="modal-loading" class="absolute inset-0 flex justify-center items-center bg-black bg-opacity-50 rounded-lg">
-      <!-- Spinner -->
       <div class="animate-spin rounded-full border-t-4 border-blue-500 border-solid w-12 h-12"></div>
     </div>
 
@@ -81,6 +92,20 @@ const images = await fetchImages();
     </div>
   </div>
 </div>
+
+<script>
+  // Client-side JavaScript: Listen for the search event
+  document.getElementById('searchInput').addEventListener('input', (event) => {
+    const searchQuery = event.target.value;
+    const searchEvent = new CustomEvent('search', { detail: searchQuery });
+    document.dispatchEvent(searchEvent);
+  });   
+
+  document.addEventListener('search', (event) => {
+    const query = event.detail;
+    filterImages(query);
+  });
+</script>
 
 <script type="text/javascript" client:load>
   // Handle modal visibility and content
