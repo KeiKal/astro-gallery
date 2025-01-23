@@ -1,7 +1,5 @@
 import axios from 'axios';
-
-const UNSPLASH_API_URL = 'https://api.unsplash.com/photos';
-const ACCESS_KEY = 'nm1FqAmcGX-0x-GtClZyX7gJxPEUeYYBeNixxWVJwHA';
+import { UNSPLASH_API_URL, ACCESS_KEY } from './config';
 
 export const fetchImages = async () => {
   try {
