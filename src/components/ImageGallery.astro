@@ -75,10 +75,6 @@ function filterImages(query) {
 <!-- Modal Section -->
 <div id="modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 hidden flex justify-center items-center z-50">
   <div class="relative bg-white p-6 rounded-lg max-w-lg w-full">
-    <button id="close-modal" class="absolute top-2 right-2 text-white font-bold text-lg">
-      X
-    </button>
-    
     <!-- Loading Spinner -->
     <div id="modal-loading" class="absolute inset-0 flex justify-center items-center bg-black bg-opacity-50 rounded-lg">
       <div class="animate-spin rounded-full border-t-4 border-blue-500 border-solid w-12 h-12"></div>
@@ -90,6 +86,9 @@ function filterImages(query) {
       <p id="modal-description" class="text-sm text-black-500 mt-2">Image Description</p>
       <span id="modal-user" class="text-xs text-black-400">By: Unknown</span>
     </div>
+    <button id="close-modal" class="absolute top-7 right-7 bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow">
+      Close
+    </button>
   </div>
 </div>
 
