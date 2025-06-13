@@ -1,0 +1,119 @@
+---
+import { products } from '../../data/products';
+import type { Product } from '../../utils/types';
+import Navbar from '../../components/Navbar.astro';
+
+export function getStaticPaths() {
+  return products.map((product) => ({
+    params: { slug: product.slug },
+    props: { product },
+  }));
+}
+
+const { product } = Astro.props;
+---
+
+<Navbar />
+
+<div class="container mx-auto px-4 py-8">
+  <div class="max-w-6xl mx-auto">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <!-- Product Image -->
+      <div class="relative">
+        <img
+          src={product.image}
+          alt={product.name}
+          class="w-full h-auto rounded-lg shadow-lg"
+        />
+        {product.stock <= 5 && product.stock > 0 && (
+          <div class="absolute top-4 right-4 bg-yellow-500 text-white px-3 py-1 rounded-full text-sm">
+            Only {product.stock} left!
+          </div>
+        )}
+        {product.stock === 0 && (
+          <div class="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm">
+            Out of Stock
+          </div>
+        )}
+      </div>
+
+      <!-- Product Details -->
+      <div class="space-y-6">
+        <h1 class="text-3xl font-bold text-gray-900">{product.name}</h1>
+        <p class="text-2xl font-semibold text-blue-600">${product.price.toFixed(2)}</p>
+        <p class="text-gray-600">{product.description}</p>
+        
+        <!-- Stock Status -->
+        <div class="flex items-center space-x-2">
+          <span class="text-sm text-gray-500">Availability:</span>
+          <span class={`text-sm font-medium ${product.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
+            {product.stock > 0 ? `In Stock (${product.stock} available)` : 'Out of Stock'}
+          </span>
+        </div>
+
+        <!-- Add to Cart Section -->
+        <div class="space-y-4">
+          <div class="flex items-center space-x-4">
+            <label for="quantity" class="text-sm font-medium text-gray-700">Quantity:</label>
+            <select
+              id="quantity"
+              class="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={product.stock === 0}
+            >
+              {Array.from({ length: Math.min(product.stock, 10) }, (_, i) => (
+                <option value={i + 1}>{i + 1}</option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            disabled={product.stock === 0}
+            data-product-id={product.id}
+          >
+            Add to Cart
+          </button>
+        </div>
+
+        <!-- Product Features -->
+        <div class="border-t pt-6">
+          <h2 class="text-lg font-semibold mb-4">Product Features</h2>
+          <ul class="space-y-2 text-gray-600">
+            <li class="flex items-center">
+              <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              High-quality materials
+            </li>
+            <li class="flex items-center">
+              <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              Free shipping on orders over $50
+            </li>
+            <li class="flex items-center">
+              <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              30-day return policy
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Add to cart functionality
+  document.querySelector('[data-product-id]')?.addEventListener('click', () => {
+    const quantity = (document.getElementById('quantity') as HTMLSelectElement)?.value;
+    const productId = document.querySelector('[data-product-id]')?.getAttribute('data-product-id');
+    
+    // Dispatch custom event for cart update
+    const cartEvent = new CustomEvent('addToCart', {
+      detail: { productId, quantity: parseInt(quantity) }
+    });
+    document.dispatchEvent(cartEvent);
+  });
+</script> 

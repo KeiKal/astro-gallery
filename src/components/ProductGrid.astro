@@ -1,0 +1,46 @@
+---
+import ProductCard from './ProductCard.astro';
+import Navbar from './Navbar.astro';
+
+const response = await fetch('http://localhost:4322/api/products');
+const products = await response.json();
+---
+
+<Navbar />
+
+<div class="container mx-auto px-4 py-8">
+  <div class="mb-8">
+    <input
+      type="text"
+      id="searchInput"
+      placeholder="Search products..."
+      class="w-full p-2 border rounded-lg"
+    />
+  </div>
+  
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    {products.map((product) => (
+      <ProductCard product={product} />
+    ))}
+  </div>
+</div>
+
+<script>
+  const searchInput = document.getElementById('searchInput');
+  const productCards = document.querySelectorAll('.product-card');
+  
+  searchInput?.addEventListener('input', (e) => {
+    const searchTerm = e.target.value.toLowerCase();
+    
+    productCards.forEach((card) => {
+      const productName = card.getAttribute('data-name')?.toLowerCase() || '';
+      const productDescription = card.getAttribute('data-description')?.toLowerCase() || '';
+      
+      if (productName.includes(searchTerm) || productDescription.includes(searchTerm)) {
+        card.style.display = 'block';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  });
+</script> 

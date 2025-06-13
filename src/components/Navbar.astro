@@ -1,20 +1,144 @@
-<nav class="bg-gray-600 p-4">
-  <div class="container mx-auto flex justify-between items-center">
-    <a href="/" class="text-white text-xl font-bold">Image Gallery</a>
-    <input 
-      type="text" 
-      placeholder="Search..." 
-      id="searchInput"
-      class="px-4 py-2 rounded-lg"
-    />
+<nav class="bg-white shadow-md">
+  <div class="container mx-auto px-4">
+    <div class="flex justify-between items-center h-16">
+      <!-- Logo -->
+      <a href="/" class="text-xl font-bold text-gray-800">
+        Shop Name
+      </a>
+
+      <!-- Navigation Links -->
+      <div class="hidden md:flex space-x-8">
+        <a href="/" class="text-gray-600 hover:text-gray-900">Home</a>
+        <a href="/categories" class="text-gray-600 hover:text-gray-900">Categories</a>
+        <a href="/about" class="text-gray-600 hover:text-gray-900">About</a>
+        <a href="/contact" class="text-gray-600 hover:text-gray-900">Contact</a>
+        <a href="/admin/products" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Admin</a>
+      </div>
+
+      <!-- Cart Button -->
+      <div class="flex items-center space-x-4">
+        <a
+          href="/checkout"
+          class="relative p-2 text-gray-600 hover:text-gray-900"
+          aria-label="Shopping Cart"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+            />
+          </svg>
+          <span
+            id="cartCount"
+            class="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
+          >
+            0
+          </span>
+        </a>
+      </div>
+    </div>
   </div>
 </nav>
 
+<!-- Cart Sidebar -->
+<div
+  id="cartSidebar"
+  class="fixed top-0 right-0 h-full w-80 bg-white shadow-lg transform translate-x-full transition-transform duration-300 ease-in-out z-50"
+>
+  <div class="p-4">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-xl font-bold">Shopping Cart</h2>
+      <button
+        id="closeCart"
+        class="text-gray-500 hover:text-gray-700"
+        aria-label="Close Cart"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
+      </button>
+    </div>
+    <div id="cartItems" class="space-y-4">
+      <!-- Cart items will be dynamically inserted here -->
+    </div>
+    <div class="mt-4 pt-4 border-t">
+      <div class="flex justify-between items-center mb-4">
+        <span class="font-bold">Total:</span>
+        <span id="cartTotal" class="font-bold">$0.00</span>
+      </div>
+      <button
+        id="checkoutButton"
+        class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-300"
+      >
+        Checkout
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
-  document.getElementById('searchInput').addEventListener('input', (event) => {
-    const searchQuery = event.target.value;
-    const searchEvent = new CustomEvent('search', { detail: searchQuery });
-    document.dispatchEvent(searchEvent);
-    console.log(searchQuery);
-  });
+  // Cart functionality
+  let cart: Array<{ id: string; quantity: number; price: number; name: string }> = [];
+  
+  // Load cart from localStorage
+  function loadCart() {
+    const savedCart = localStorage.getItem('cart');
+    if (savedCart) {
+      cart = JSON.parse(savedCart);
+      updateCartCount();
+    }
+  }
+
+  // Update cart count
+  function updateCartCount() {
+    const cartCount = document.getElementById('cartCount');
+    if (cartCount) {
+      const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+      cartCount.textContent = totalItems.toString();
+    }
+  }
+
+  // Listen for add to cart events
+  document.addEventListener('addToCart', ((event: CustomEvent) => {
+    const { productId, quantity } = event.detail;
+    const existingItem = cart.find(item => item.id === productId);
+    
+    if (existingItem) {
+      existingItem.quantity += quantity;
+    } else {
+      // Here you would typically fetch the product details
+      // For now, we'll use placeholder data
+      cart.push({
+        id: productId,
+        quantity,
+        price: 0, // This should be fetched from your product data
+        name: 'Product' // This should be fetched from your product data
+      });
+    }
+    
+    localStorage.setItem('cart', JSON.stringify(cart));
+    updateCartCount();
+  }) as EventListener);
+
+  // Initialize cart
+  loadCart();
 </script>

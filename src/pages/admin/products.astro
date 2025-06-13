@@ -1,0 +1,452 @@
+---
+import Navbar from '../../components/Navbar.astro';
+import type { Product } from '../../utils/types';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+// Fetch products from the database
+const products: Product[] = await prisma.product.findMany();
+
+// Disconnect from the database
+await prisma.$disconnect();
+---
+
+<Navbar />
+
+<div class="container mx-auto px-4 py-8">
+  <div class="max-w-6xl mx-auto">
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Manage Products</h1>
+      <button
+        id="addProductBtn"
+        class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+      >
+        Add New Product
+      </button>
+    </div>
+
+    <!-- Product Form Modal -->
+    <div id="productModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+      <div class="bg-white rounded-lg p-8 max-w-2xl w-full">
+        <h2 class="text-2xl font-bold mb-6" id="modalTitle">Add New Product</h2>
+        <form id="productForm" class="space-y-4">
+          <input type="hidden" id="productId" />
+          <div>
+            <label for="name" class="block text-sm font-medium text-gray-700">Product Name</label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              required
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+            <textarea
+              id="description"
+              name="description"
+              required
+              rows="3"
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            ></textarea>
+          </div>
+          <div>
+            <label for="price" class="block text-sm font-medium text-gray-700">Price</label>
+            <input
+              type="number"
+              id="price"
+              name="price"
+              step="0.01"
+              required
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+          <div class="mb-4">
+            <label for="image" class="block text-sm font-medium text-gray-700">Product Image</label>
+            <input
+              type="file"
+              id="image"
+              name="image"
+              accept="image/*"
+              class="mt-1 block w-full"
+            />
+          </div>
+          <div>
+            <label for="category" class="block text-sm font-medium text-gray-700">Category</label>
+            <input
+              type="text"
+              id="category"
+              name="category"
+              required
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label for="stock" class="block text-sm font-medium text-gray-700">Stock</label>
+            <input
+              type="number"
+              id="stock"
+              name="stock"
+              required
+              min="0"
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+          <div class="flex justify-end space-x-4 mt-6">
+            <button
+              type="button"
+              id="cancelBtn"
+              class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Save Product
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Edit Product Modal -->
+    <div id="editProductModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+      <div class="bg-white rounded-lg p-8 max-w-2xl w-full">
+        <h2 class="text-2xl font-bold mb-6">Edit Product</h2>
+        <form id="editProductForm" class="space-y-4">
+          <input type="hidden" id="editProductId" name="editProductId" />
+          <div>
+            <label for="editName" class="block text-sm font-medium text-gray-700">Product Name</label>
+            <input
+              type="text"
+              id="editName"
+              name="name"
+              required
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label for="editDescription" class="block text-sm font-medium text-gray-700">Description</label>
+            <textarea
+              id="editDescription"
+              name="description"
+              required
+              rows="3"
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            ></textarea>
+          </div>
+          <div>
+            <label for="editPrice" class="block text-sm font-medium text-gray-700">Price</label>
+            <input
+              type="number"
+              id="editPrice"
+              name="price"
+              step="0.01"
+              required
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label for="editCategory" class="block text-sm font-medium text-gray-700">Category</label>
+            <input
+              type="text"
+              id="editCategory"
+              name="category"
+              required
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label for="editStock" class="block text-sm font-medium text-gray-700">Stock</label>
+            <input
+              type="number"
+              id="editStock"
+              name="stock"
+              required
+              min="0"
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+          <div class="flex justify-end space-x-4 mt-6">
+            <button
+              type="button"
+              id="cancelEditBtn"
+              class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Products Table -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200" id="productsTableBody">
+          {products.map((product: Product) => (
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <img src={product.image} alt={product.name} class="h-16 w-16 object-cover rounded" />
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">{product.name}</div>
+                <div class="text-sm text-gray-500">{product.description}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">${product.price.toFixed(2)}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">{product.category}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">{product.stock}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <button
+                  class="text-blue-600 hover:text-blue-900 mr-4"
+                  data-product-id={product.id}
+                  onclick="editProduct(this.dataset.productId)"
+                >
+                  Edit
+                </button>
+                <button
+                  class="text-red-600 hover:text-red-900"
+                  data-product-id={product.id}
+                  onclick="deleteProduct(this.dataset.productId)"
+                >
+                  Delete
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Modal elements
+  const modal = document.getElementById('productModal');
+  const modalTitle = document.getElementById('modalTitle');
+  const productForm = document.getElementById('productForm');
+  const addProductBtn = document.getElementById('addProductBtn');
+  const cancelBtn = document.getElementById('cancelBtn');
+
+  // Show modal for adding new product
+  addProductBtn?.addEventListener('click', () => {
+    modalTitle!.textContent = 'Add New Product';
+    (productForm as HTMLFormElement)?.reset();
+    document.getElementById('productId')?.setAttribute('value', '');
+    modal?.classList.remove('hidden');
+  });
+
+  // Hide modal
+  cancelBtn?.addEventListener('click', () => {
+    modal?.classList.add('hidden');
+  });
+
+  // Handle form submission
+  productForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+    const productId = formData.get('productId');
+    const imageInput = document.getElementById('image') as HTMLInputElement;
+    
+    // Handle image upload
+    let imageUrl = '';
+    if (imageInput && imageInput.files && imageInput.files.length > 0) {
+      const file = imageInput.files[0];
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', file);
+      
+      try {
+        const uploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: uploadFormData,
+        });
+        
+        if (!uploadResponse.ok) {
+          throw new Error('Failed to upload image');
+        }
+        
+        const { url } = await uploadResponse.json();
+        imageUrl = url;
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        alert('Failed to upload image. Please try again.');
+        return;
+      }
+    } else {
+      // Use a default image if none is uploaded
+      imageUrl = '/uploads/default-product.png';
+    }
+
+    // Validate required fields
+    const name = formData.get('name') as string;
+    const description = formData.get('description') as string;
+    const price = formData.get('price') as string;
+    const category = formData.get('category') as string;
+    const stock = formData.get('stock') as string;
+    if (!name || !description || !price || !category || !stock) {
+      alert('Please fill in all required fields.');
+      return;
+    }
+
+    const product = {
+      id: productId || crypto.randomUUID(),
+      name,
+      description,
+      price: parseFloat(price),
+      image: imageUrl,
+      category,
+      stock: parseInt(stock),
+      slug: name.toLowerCase().replace(/\s+/g, '-'),
+    };
+
+    try {
+      const response = await fetch('/api/products', {
+        method: productId ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(product),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save product');
+      }
+
+      // Refresh the page to show updated products
+      window.location.reload();
+    } catch (error) {
+      console.error('Error saving product:', error);
+      alert('Failed to save product. Please try again.');
+    }
+  });
+
+  // Edit product
+  const editProductModal = document.getElementById('editProductModal');
+  const editProductForm = document.getElementById('editProductForm');
+  const cancelEditBtn = document.getElementById('cancelEditBtn');
+
+  // Declare editProduct on window
+  (window as any).editProduct = async (productId: string) => {
+    try {
+      const response = await fetch(`/api/products/${productId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch product');
+      }
+
+      const product = await response.json();
+      const editProductId = document.getElementById('editProductId') as HTMLInputElement;
+      const editName = document.getElementById('editName') as HTMLInputElement;
+      const editDescription = document.getElementById('editDescription') as HTMLTextAreaElement;
+      const editPrice = document.getElementById('editPrice') as HTMLInputElement;
+      const editCategory = document.getElementById('editCategory') as HTMLInputElement;
+      const editStock = document.getElementById('editStock') as HTMLInputElement;
+
+      editProductId.value = product.id;
+      editName.value = product.name;
+      editDescription.value = product.description;
+      editPrice.value = product.price;
+      editCategory.value = product.category;
+      editStock.value = product.stock;
+
+      editProductModal?.classList.remove('hidden');
+    } catch (error) {
+      console.error('Error fetching product:', error);
+      alert('Failed to fetch product details. Please try again.');
+    }
+  };
+
+  // Hide modal
+  cancelEditBtn?.addEventListener('click', () => {
+    editProductModal?.classList.add('hidden');
+  });
+
+  // Handle form submission
+  editProductForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+    const productId = formData.get('editProductId') as string;
+    if (!productId) {
+      alert('Product ID is missing. Please try again.');
+      return;
+    }
+    const product = {
+      id: productId,
+      name: formData.get('name') as string,
+      description: formData.get('description') as string,
+      price: parseFloat(formData.get('price') as string),
+      category: formData.get('category') as string,
+      stock: parseInt(formData.get('stock') as string),
+    };
+
+    try {
+      const response = await fetch(`/api/products/${productId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(product),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update product');
+      }
+
+      // Refresh the page to show updated products
+      window.location.reload();
+    } catch (error) {
+      console.error('Error updating product:', error);
+      alert('Failed to update product. Please try again.');
+    }
+  });
+
+  // Delete product
+  (window as any).deleteProduct = async (productId: string) => {
+    if (!confirm('Are you sure you want to delete this product?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/products/${productId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete product');
+      }
+
+      // Refresh the page to show updated products
+      window.location.reload();
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      alert('Failed to delete product. Please try again.');
+    }
+  };
+</script> 

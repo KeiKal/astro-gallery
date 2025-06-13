@@ -1,0 +1,26 @@
+import Navbar from '../components/Navbar.astro';
+import ProductCard from '../components/ProductCard.astro';
+import { PrismaClient } from '@prisma/client';
+import type { Product } from '../utils/types';
+
+const prisma = new PrismaClient();
+
+// Fetch products from the database
+const products: Product[] = await prisma.product.findMany();
+
+// Disconnect from the database
+await prisma.$disconnect();
+
+<Navbar />
+
+<div class="container mx-auto px-4 py-8">
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-3xl font-bold text-gray-900 mb-8">Our Products</h1>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {products.map((product: Product) => (
+        <ProductCard product={product} />
+      ))}
+    </div>
+  </div>
+</div> 

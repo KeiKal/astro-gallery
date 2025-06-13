@@ -1,0 +1,291 @@
+---
+import Navbar from '../components/Navbar.astro';
+
+// Get the site URL from environment variables
+const siteUrl = import.meta.env.SITE_URL || 'http://localhost:4321';
+---
+
+<Navbar />
+
+<div class="container mx-auto px-4 py-8">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <!-- Shipping Information -->
+    <div>
+      <h2 class="text-2xl font-bold mb-6">Shipping Information</h2>
+      <form id="shippingForm" class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label for="firstName" class="block text-sm font-medium text-gray-700">First Name</label>
+            <input type="text" id="firstName" name="firstName" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+          </div>
+          <div>
+            <label for="lastName" class="block text-sm font-medium text-gray-700">Last Name</label>
+            <input type="text" id="lastName" name="lastName" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+          </div>
+        </div>
+        <div>
+          <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+          <input type="email" id="email" name="email" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+        </div>
+        <div>
+          <label for="address" class="block text-sm font-medium text-gray-700">Address</label>
+          <input type="text" id="address" name="address" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label for="city" class="block text-sm font-medium text-gray-700">City</label>
+            <input type="text" id="city" name="city" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+          </div>
+          <div>
+            <label for="state" class="block text-sm font-medium text-gray-700">State</label>
+            <input type="text" id="state" name="state" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label for="zipCode" class="block text-sm font-medium text-gray-700">ZIP Code</label>
+            <input type="text" id="zipCode" name="zipCode" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+          </div>
+          <div>
+            <label for="country" class="block text-sm font-medium text-gray-700">Country</label>
+            <input type="text" id="country" name="country" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Order Summary -->
+    <div>
+      <h2 class="text-2xl font-bold mb-6">Order Summary</h2>
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <div id="orderItems" class="space-y-4 mb-6">
+          <!-- Order items will be dynamically inserted here -->
+        </div>
+        <div class="border-t pt-4 space-y-2">
+          <div class="flex justify-between">
+            <span>Subtotal</span>
+            <span id="subtotal">$0.00</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Shipping</span>
+            <span id="shipping">$0.00</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Tax</span>
+            <span id="tax">$0.00</span>
+          </div>
+          <div class="flex justify-between font-bold text-lg">
+            <span>Total</span>
+            <span id="total">$0.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payment Section -->
+      <div class="mt-8">
+        <h2 class="text-2xl font-bold mb-6">Payment Information</h2>
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <div id="card-element" class="mb-4">
+            <!-- Stripe Card Element will be inserted here -->
+          </div>
+          <div id="card-errors" class="text-red-500 text-sm mb-4"></div>
+          <button
+            id="placeOrderButton"
+            class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            Place Order
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  console.log('Checkout page script starting...');
+
+  import { loadStripe } from '@stripe/stripe-js';
+  import type { Stripe, StripeElements, StripeElementChangeEvent } from '@stripe/stripe-js';
+
+  // Get cart items from localStorage
+  const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+  console.log('Cart items from localStorage:', cart);
+
+  const orderItems = document.getElementById('orderItems');
+  const subtotalElement = document.getElementById('subtotal');
+  const shippingElement = document.getElementById('shipping');
+  const taxElement = document.getElementById('tax');
+  const totalElement = document.getElementById('total');
+  const placeOrderButton = document.getElementById('placeOrderButton') as HTMLButtonElement;
+  const cardErrors = document.getElementById('card-errors');
+
+  // Calculate order summary
+  function updateOrderSummary() {
+    try {
+      if (cart.length === 0) {
+        if (orderItems) orderItems.innerHTML = '<p class="text-gray-500">Your cart is empty</p>';
+        if (subtotalElement) subtotalElement.textContent = '$0.00';
+        if (shippingElement) shippingElement.textContent = '$0.00';
+        if (taxElement) taxElement.textContent = '$0.00';
+        if (totalElement) totalElement.textContent = '$0.00';
+        return;
+      }
+
+      // Calculate subtotal directly from cart items
+      const subtotal = cart.reduce((sum: number, item: any) => {
+        const itemTotal = item.price * item.quantity;
+        console.log(`Item: ${item.name}, Price: ${item.price}, Quantity: ${item.quantity}, Total: ${itemTotal}`);
+        return sum + itemTotal;
+      }, 0);
+      
+      console.log('Calculated subtotal:', subtotal);
+
+      const shipping = subtotal > 50 ? 0 : 5.99;
+      const tax = subtotal * 0.1; // 10% tax
+      const total = subtotal + shipping + tax;
+
+      // Update order items
+      if (orderItems) {
+        orderItems.innerHTML = cart.map((item: any) => `
+          <div class="flex justify-between items-center border-b pb-4">
+            <div>
+              <h3 class="font-medium">${item.name}</h3>
+              <p class="text-sm text-gray-500">Quantity: ${item.quantity}</p>
+            </div>
+            <span class="font-medium">$${(item.price * item.quantity).toFixed(2)}</span>
+          </div>
+        `).join('');
+      }
+
+      // Update summary totals
+      if (subtotalElement) {
+        subtotalElement.textContent = `$${subtotal.toFixed(2)}`;
+        console.log('Updated subtotal element:', subtotalElement.textContent);
+      }
+      if (shippingElement) {
+        shippingElement.textContent = `$${shipping.toFixed(2)}`;
+        console.log('Updated shipping element:', shippingElement.textContent);
+      }
+      if (taxElement) {
+        taxElement.textContent = `$${tax.toFixed(2)}`;
+        console.log('Updated tax element:', taxElement.textContent);
+      }
+      if (totalElement) {
+        totalElement.textContent = `$${total.toFixed(2)}`;
+        console.log('Updated total element:', totalElement.textContent);
+      }
+
+      console.log('Updated summary:', {
+        subtotal: subtotal.toFixed(2),
+        shipping: shipping.toFixed(2),
+        tax: tax.toFixed(2),
+        total: total.toFixed(2)
+      });
+    } catch (error) {
+      console.error('Error updating order summary:', error);
+      if (orderItems) orderItems.innerHTML = '<p class="text-red-500">Error loading order summary. Please try again.</p>';
+    }
+  }
+
+  // Initial update of order summary
+  updateOrderSummary();
+
+  // Listen for cart updates
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'cart') {
+      const updatedCart = JSON.parse(event.newValue || '[]');
+      console.log('Cart updated:', updatedCart);
+      updateOrderSummary();
+    }
+  });
+
+  // Initialize Stripe if key is available
+  const stripeKey = import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY;
+  if (stripeKey) {
+    loadStripe(stripeKey).then(stripe => {
+      if (!stripe) {
+        console.error('Stripe failed to load.');
+        return;
+      }
+
+      console.log('Stripe loaded successfully');
+      const elements = stripe.elements();
+      const card = elements.create('card');
+      card.mount('#card-element');
+
+      // Handle card element changes
+      card.on('change', (event: StripeElementChangeEvent) => {
+        if (cardErrors) {
+          cardErrors.textContent = event.error ? event.error.message : '';
+        }
+      });
+
+      // Place order button event listener
+      placeOrderButton?.addEventListener('click', async () => {
+        console.log('Place order button clicked');
+        try {
+          const { error, paymentMethod } = await stripe.createPaymentMethod({
+            type: 'card',
+            card,
+          });
+
+          if (error) {
+            console.error('Payment method error:', error);
+            if (cardErrors) cardErrors.textContent = error.message || 'An error occurred';
+            return;
+          }
+
+          console.log('Payment method created:', paymentMethod);
+
+          // Get shipping form data
+          const shippingForm = document.getElementById('shippingForm') as HTMLFormElement;
+          const formData = new FormData(shippingForm);
+          const shippingInfo = {
+            address: formData.get('address'),
+            city: formData.get('city'),
+            state: formData.get('state'),
+            zipCode: formData.get('zipCode'),
+            country: formData.get('country'),
+          };
+
+          // Send the payment method ID to your server to complete the payment
+          const response = await fetch('/api/checkout', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              paymentMethodId: paymentMethod.id,
+              items: cart,
+              total: parseFloat(totalElement?.textContent?.replace('$', '') || '0'),
+              shippingInfo,
+              userEmail: formData.get('email'),
+              userName: `${formData.get('firstName')} ${formData.get('lastName')}`,
+            }),
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            throw new Error(result.error || 'An error occurred during checkout');
+          }
+
+          // Clear cart and redirect to success page
+          localStorage.removeItem('cart');
+          window.location.href = `/order-confirmation?orderId=${result.orderId}`;
+        } catch (error) {
+          console.error('Error placing order:', error);
+          alert('Failed to place order. Please try again.');
+        }
+      });
+    }).catch(error => {
+      console.error('Error initializing Stripe:', error);
+    });
+  } else {
+    console.warn('Stripe publishable key not found. Payment functionality will be disabled.');
+    if (placeOrderButton) {
+      placeOrderButton.disabled = true;
+      placeOrderButton.textContent = 'Payment Unavailable';
+    }
+  }
+</script> 
