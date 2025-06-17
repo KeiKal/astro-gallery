@@ -1,6 +1,14 @@
 import { MongoClient } from 'mongodb';
+import dotenv from 'dotenv';
 
-const uri = "mongodb+srv://keikal_shop_user:Iygsh4JB9mWnXLIx@cluster0.obxhd.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+dotenv.config();
+
+const uri = process.env.DATABASE_URL;
+if (!uri) {
+  console.error("DATABASE_URL is not defined in environment variables");
+  process.exit(1);
+}
+
 const client = new MongoClient(uri);
 
 async function run() {
@@ -9,7 +17,7 @@ async function run() {
     console.log("Successfully connected to MongoDB.");
     
     // Test database operations
-    const database = client.db("sample_mflix");
+    const database = client.db("keikal_shop"); // Updated to match your application's database
     const collections = await database.listCollections().toArray();
     console.log("Available collections:", collections.map(c => c.name));
     

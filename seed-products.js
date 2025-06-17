@@ -9,7 +9,8 @@ const products = [
     price: 19.99,
     image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
     category: "Clothing",
-    stock: 100
+    stock: 100,
+    slug: "classic-white-tshirt"
   },
   {
     name: "Denim Jeans",
@@ -17,7 +18,8 @@ const products = [
     price: 49.99,
     image: "https://images.unsplash.com/photo-1542272604-787c3835535d?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
     category: "Clothing",
-    stock: 50
+    stock: 50,
+    slug: "denim-jeans"
   },
   {
     name: "Leather Wallet",
@@ -25,7 +27,8 @@ const products = [
     price: 29.99,
     image: "https://images.unsplash.com/photo-1627123424574-724758594e93?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
     category: "Accessories",
-    stock: 75
+    stock: 75,
+    slug: "leather-wallet"
   },
   {
     name: "Smart Watch",
@@ -33,7 +36,8 @@ const products = [
     price: 199.99,
     image: "https://images.unsplash.com/photo-1579586337278-3befd40fd17a?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
     category: "Electronics",
-    stock: 30
+    stock: 30,
+    slug: "smart-watch"
   }
 ];
 
