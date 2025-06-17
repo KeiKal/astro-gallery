@@ -105,6 +105,7 @@
     if (savedCart) {
       cart = JSON.parse(savedCart);
       updateCartCount();
+      updateCartItems();
     }
   }
 
@@ -117,28 +118,136 @@
     }
   }
 
+  // Update cart items display
+  function updateCartItems() {
+    const cartItems = document.getElementById('cartItems');
+    const cartTotal = document.getElementById('cartTotal');
+    const checkoutButton = document.getElementById('checkoutButton') as HTMLButtonElement;
+    
+    if (cartItems && cartTotal) {
+      if (cart.length === 0) {
+        cartItems.innerHTML = '<p class="text-gray-500 text-center">Your cart is empty</p>';
+        cartTotal.textContent = '$0.00';
+        if (checkoutButton) {
+          checkoutButton.disabled = true;
+          checkoutButton.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+        return;
+      }
+
+      const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      cartTotal.textContent = `$${total.toFixed(2)}`;
+
+      if (checkoutButton) {
+        checkoutButton.disabled = false;
+        checkoutButton.classList.remove('opacity-50', 'cursor-not-allowed');
+      }
+
+      cartItems.innerHTML = cart.map(item => `
+        <div class="flex items-center justify-between py-2 border-b" data-product-id="${item.id}">
+          <div class="flex-1">
+            <h3 class="font-medium">${item.name}</h3>
+            <p class="text-sm text-gray-500">$${item.price.toFixed(2)} x ${item.quantity}</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button 
+              class="remove-item text-red-500 hover:text-red-700 p-1"
+              data-product-id="${item.id}"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      `).join('');
+
+      // Add event listeners to remove buttons
+      document.querySelectorAll('.remove-item').forEach(button => {
+        button.addEventListener('click', (e) => {
+          const productId = (e.currentTarget as HTMLElement).dataset.productId;
+          if (productId) {
+            removeFromCart(productId);
+          }
+        });
+      });
+    }
+  }
+
+  // Remove item from cart
+  function removeFromCart(productId: string) {
+    const itemToRemove = cart.find(item => item.id === productId);
+    cart = cart.filter(item => item.id !== productId);
+    
+    // Update localStorage first
+    localStorage.setItem('cart', JSON.stringify(cart));
+    
+    // Then dispatch the custom event
+    window.dispatchEvent(new CustomEvent('cartUpdated', {
+      detail: { cart }
+    }));
+    
+    updateCartCount();
+    updateCartItems();
+    
+    // Show toast with item name
+    if (itemToRemove) {
+      (window as any).showToast(`${itemToRemove.name} removed from cart`, 'warning');
+    }
+  }
+
   // Listen for add to cart events
   document.addEventListener('addToCart', ((event: CustomEvent) => {
-    const { productId, quantity } = event.detail;
+    const { productId, quantity, price, name } = event.detail;
     const existingItem = cart.find(item => item.id === productId);
     
     if (existingItem) {
       existingItem.quantity += quantity;
+      (window as any).showToast(`${name} quantity updated in cart`, 'info');
     } else {
-      // Here you would typically fetch the product details
-      // For now, we'll use placeholder data
       cart.push({
         id: productId,
         quantity,
-        price: 0, // This should be fetched from your product data
-        name: 'Product' // This should be fetched from your product data
+        price,
+        name
       });
+      (window as any).showToast(`${name} added to cart`, 'success');
     }
     
+    // Update localStorage first
     localStorage.setItem('cart', JSON.stringify(cart));
+    
+    // Then dispatch the custom event
+    window.dispatchEvent(new CustomEvent('cartUpdated', {
+      detail: { cart }
+    }));
+    
     updateCartCount();
+    updateCartItems();
   }) as EventListener);
 
   // Initialize cart
   loadCart();
+
+  // Cart sidebar functionality
+  const cartButton = document.querySelector('a[href="/checkout"]');
+  const cartSidebar = document.getElementById('cartSidebar');
+  const closeCart = document.getElementById('closeCart');
+  const checkoutButton = document.getElementById('checkoutButton');
+
+  cartButton?.addEventListener('click', (e) => {
+    e.preventDefault();
+    cartSidebar?.classList.remove('translate-x-full');
+  });
+
+  closeCart?.addEventListener('click', () => {
+    cartSidebar?.classList.add('translate-x-full');
+  });
+
+  // Handle checkout button click
+  checkoutButton?.addEventListener('click', () => {
+    if (cart.length > 0) {
+      window.location.href = '/checkout';
+    }
+  });
 </script>

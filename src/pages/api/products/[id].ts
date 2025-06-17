@@ -111,7 +111,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
 
 export const getStaticPaths: GetStaticPaths = async () => {
   // Fetch all product IDs from your data source using an absolute URL
-  const products = await fetch('http://localhost:4322/api/products').then(res => res.json());
+  const products = await fetch('http://localhost:4321/api/products').then(res => res.json());
   
   // Return an array of objects with the `params` property
   return products.map((product: { id: string }) => ({

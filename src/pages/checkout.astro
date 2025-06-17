@@ -107,95 +107,133 @@ const siteUrl = import.meta.env.SITE_URL || 'http://localhost:4321';
   import { loadStripe } from '@stripe/stripe-js';
   import type { Stripe, StripeElements, StripeElementChangeEvent } from '@stripe/stripe-js';
 
-  // Get cart items from localStorage
-  const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-  console.log('Cart items from localStorage:', cart);
+  interface CartItem {
+    id: string;
+    quantity: number;
+    price: number;
+    name: string;
+  }
 
-  const orderItems = document.getElementById('orderItems');
-  const subtotalElement = document.getElementById('subtotal');
-  const shippingElement = document.getElementById('shipping');
-  const taxElement = document.getElementById('tax');
-  const totalElement = document.getElementById('total');
-  const placeOrderButton = document.getElementById('placeOrderButton') as HTMLButtonElement;
-  const cardErrors = document.getElementById('card-errors');
+  // Load cart from localStorage
+  let cart: CartItem[] = [];
+  let total = 0;
 
-  // Calculate order summary
-  function updateOrderSummary() {
-    try {
-      if (cart.length === 0) {
-        if (orderItems) orderItems.innerHTML = '<p class="text-gray-500">Your cart is empty</p>';
-        if (subtotalElement) subtotalElement.textContent = '$0.00';
-        if (shippingElement) shippingElement.textContent = '$0.00';
-        if (taxElement) taxElement.textContent = '$0.00';
-        if (totalElement) totalElement.textContent = '$0.00';
-        return;
-      }
-
-      // Calculate subtotal directly from cart items
-      const subtotal = cart.reduce((sum: number, item: any) => {
-        const itemTotal = item.price * item.quantity;
-        console.log(`Item: ${item.name}, Price: ${item.price}, Quantity: ${item.quantity}, Total: ${itemTotal}`);
-        return sum + itemTotal;
-      }, 0);
-      
-      console.log('Calculated subtotal:', subtotal);
-
-      const shipping = subtotal > 50 ? 0 : 5.99;
-      const tax = subtotal * 0.1; // 10% tax
-      const total = subtotal + shipping + tax;
-
-      // Update order items
-      if (orderItems) {
-        orderItems.innerHTML = cart.map((item: any) => `
-          <div class="flex justify-between items-center border-b pb-4">
-            <div>
-              <h3 class="font-medium">${item.name}</h3>
-              <p class="text-sm text-gray-500">Quantity: ${item.quantity}</p>
-            </div>
-            <span class="font-medium">$${(item.price * item.quantity).toFixed(2)}</span>
-          </div>
-        `).join('');
-      }
-
-      // Update summary totals
-      if (subtotalElement) {
-        subtotalElement.textContent = `$${subtotal.toFixed(2)}`;
-        console.log('Updated subtotal element:', subtotalElement.textContent);
-      }
-      if (shippingElement) {
-        shippingElement.textContent = `$${shipping.toFixed(2)}`;
-        console.log('Updated shipping element:', shippingElement.textContent);
-      }
-      if (taxElement) {
-        taxElement.textContent = `$${tax.toFixed(2)}`;
-        console.log('Updated tax element:', taxElement.textContent);
-      }
-      if (totalElement) {
-        totalElement.textContent = `$${total.toFixed(2)}`;
-        console.log('Updated total element:', totalElement.textContent);
-      }
-
-      console.log('Updated summary:', {
-        subtotal: subtotal.toFixed(2),
-        shipping: shipping.toFixed(2),
-        tax: tax.toFixed(2),
-        total: total.toFixed(2)
-      });
-    } catch (error) {
-      console.error('Error updating order summary:', error);
-      if (orderItems) orderItems.innerHTML = '<p class="text-red-500">Error loading order summary. Please try again.</p>';
+  function loadCart() {
+    const savedCart = localStorage.getItem('cart');
+    if (savedCart) {
+      cart = JSON.parse(savedCart);
+      updateOrderSummary();
     }
   }
 
-  // Initial update of order summary
-  updateOrderSummary();
+  function updateOrderSummary() {
+    const orderItems = document.getElementById('orderItems');
+    const orderTotal = document.getElementById('total');
+    const subtotal = document.getElementById('subtotal');
+    const shipping = document.getElementById('shipping');
+    const tax = document.getElementById('tax');
+    
+    if (!orderItems || !orderTotal || !subtotal || !shipping || !tax) return;
 
-  // Listen for cart updates
+    if (cart.length === 0) {
+      orderItems.innerHTML = '<p class="text-gray-500 text-center">Your cart is empty</p>';
+      orderTotal.textContent = '$0.00';
+      subtotal.textContent = '$0.00';
+      shipping.textContent = '$0.00';
+      tax.textContent = '$0.00';
+      return;
+    }
+
+    // Calculate totals
+    const subtotalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const shippingAmount = 5.99; // Fixed shipping cost
+    const taxAmount = subtotalAmount * 0.1; // 10% tax
+    total = subtotalAmount + shippingAmount + taxAmount;
+
+    // Update order items
+    orderItems.innerHTML = cart.map(item => `
+      <div class="flex justify-between py-2">
+        <div>
+          <p class="font-medium">${item.name}</p>
+          <p class="text-sm text-gray-500">Quantity: ${item.quantity}</p>
+        </div>
+        <p>$${(item.price * item.quantity).toFixed(2)}</p>
+      </div>
+    `).join('');
+
+    // Update totals
+    subtotal.textContent = `$${subtotalAmount.toFixed(2)}`;
+    shipping.textContent = `$${shippingAmount.toFixed(2)}`;
+    tax.textContent = `$${taxAmount.toFixed(2)}`;
+    orderTotal.textContent = `$${total.toFixed(2)}`;
+  }
+
+  // Listen for cart updates from localStorage
   window.addEventListener('storage', (event) => {
     if (event.key === 'cart') {
-      const updatedCart = JSON.parse(event.newValue || '[]');
-      console.log('Cart updated:', updatedCart);
+      const newCart = event.newValue ? JSON.parse(event.newValue) : [];
+      cart = newCart;
       updateOrderSummary();
+    }
+  });
+
+  // Listen for cart updates from custom event
+  window.addEventListener('cartUpdated', ((event: CustomEvent) => {
+    cart = event.detail.cart;
+    updateOrderSummary();
+  }) as EventListener);
+
+  // Initialize
+  loadCart();
+
+  // Handle form submission
+  const form = document.getElementById('checkoutForm');
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target as HTMLFormElement);
+    const data = {
+      shippingInfo: {
+        name: formData.get('name'),
+        email: formData.get('email'),
+        address: formData.get('address'),
+        city: formData.get('city'),
+        state: formData.get('state'),
+        zipCode: formData.get('zipCode'),
+        country: formData.get('country'),
+      },
+      paymentInfo: {
+        cardNumber: formData.get('cardNumber'),
+        expiryDate: formData.get('expiryDate'),
+        cvv: formData.get('cvv'),
+      },
+      items: cart,
+      total,
+      userEmail: formData.get('email'),
+      userName: formData.get('name'),
+    };
+
+    try {
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Clear cart
+        localStorage.removeItem('cart');
+        // Redirect to success page
+        window.location.href = `/order-confirmation?orderId=${result.orderId}`;
+      } else {
+        window.showToast('Checkout failed: ' + result.error);
+      }
+    } catch (error) {
+      window.showToast('An error occurred during checkout');
     }
   });
 

@@ -1,5 +1,6 @@
 ---
 import type { Product } from '../utils/types';
+import Toast from './Toast.astro';
 
 interface Props {
   product: {
@@ -37,7 +38,15 @@ const { product } = Astro.props;
   </div>
 </div>
 
+<Toast />
+
 <script>
+  declare global {
+    interface Window {
+      showToast: (message?: string) => void;
+    }
+  }
+
   document.querySelectorAll('.add-to-cart').forEach((button) => {
     button.addEventListener('click', () => {
       const productId = button.getAttribute('data-product-id');
@@ -67,8 +76,19 @@ const { product } = Astro.props;
         // Save updated cart
         localStorage.setItem('cart', JSON.stringify(cart));
         
-        // Show success message
-        alert('Product added to cart!');
+        // Dispatch custom event for cart update with all necessary data
+        const cartEvent = new CustomEvent('addToCart', {
+          detail: {
+            productId,
+            quantity: 1,
+            price: productPrice,
+            name: productName
+          }
+        });
+        document.dispatchEvent(cartEvent);
+        
+        // Show toast notification
+        window.showToast(`${productName} added to cart!`);
       }
     });
   });
